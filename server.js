@@ -6,7 +6,7 @@ const app = express();
 app.get("/", (req, res) => {
   res.send("Главная страница");
 });
-
+     
 // Страница "О компании"
 app.get("/about", (req, res) => {
   res.send("Информация о компании");
