@@ -1,0 +1,19 @@
+<h1>Каталог товаров</h1>
+<div class="catalog" style="display: flex; gap: 15px;">
+    {{#each products}}
+        <div class="card" style="border: 1px solid #000; padding: 15px; border-radius: 5px;">
+            <h2>{{this.name}}</h2>
+            <p>Цена: <strong>{{this.price}} BYN</strong></p>
+            
+            {{#if this.isAvailable}}
+                <p style="color: green;">В наличии</p>
+            {{else}}
+                <p style="color: red;">Нет в наличии</p>
+            {{//if}}
+            
+            <a href="/products/{{this.id}}">Подробнее...</a>
+        </div>
+    {{else}}
+        <p>Товары пока отсутствуют.</p>
+    {{/each}}
+</div>

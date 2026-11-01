@@ -1,0 +1,17 @@
+{
+    "name": "my-api",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/index.js",
+    "scripts": {
+        "dev": "node src/index.js",
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "dotenv": "^18.0.9",
+        "express": "^4.22.3",
+        "express-handlebars": "^8.0.7",
+        "hbs": "^4.4.0"
+    }
+}
