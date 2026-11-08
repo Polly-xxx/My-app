@@ -1,4 +1,4 @@
-import { taskModel } from '../models/task.js';
+import { taskModel } from '../models/tasks.js';
 
 export const taskService = {
     getTasksList: () => {

@@ -4,4 +4,4 @@ const products = [
     { id: 3, name: "Мышь", price: 1500, isAvailable: false }
 ];
 
-export default products;
+export default products; //сделать доступным файл products для папки проекта

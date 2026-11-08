@@ -1,6 +1,17 @@
-<nav style="background: #f4f4f4; padding: 10px;">
-    <a href="/">Главная</a> | 
-    <a href="/products">Каталог товаров</a> | 
-    <a href="/about">О нас</a> |
-    <a href="/tasks">API Задач (JSON)</a>
+<nav style="background: #f4f4f4; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <a href="/">Главная</a> | 
+        <a href="/products">Каталог товаров</a> | 
+        <a href="/about">О нас</a> |
+        <a href="/tasks">API Задач (JSON)</a>
+    </div>
+    <div>
+        {{#if user}}
+            <span style="color: green; font-weight: bold;">● {{user.email}} (Online)</span> |
+            <a href="/auth/logout" style="color: red;">Выйти</a>
+        {{else}}
+            <a href="/auth/login">Войти</a> | 
+            <a href="/auth/register">Регистрация</a>
+        {{/if}}
+    </div>
 </nav>

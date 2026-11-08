@@ -5,48 +5,47 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-// Импорт роутеров
 import tasksRouter from './routes/tasks.js';
-import { getProducts, getProductById } from './src/src/controllers/productController.js'; // импорт контроллера товаров
+import authRouter from './routes/auth.js'; // Добавили роутер для входа/регистрации
+import { getProducts, getProductById } from './controllers/productController.js';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(__filename); // Переменная __dirname теперь четко указывает на папку src/
 
-// Глобальный Логирующий Middleware (Презентация 4)
+// Глобальный Логирующий Middleware
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     next();
 });
 
-// Middleware для чтения JSON и статики
+// Middleware для парсинга JSON, данных с HTML-форм и статики
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true })); // Важно для работы авторизации!
+app.use(express.static(path.join(__dirname, '../public'))); // Выходим из src наружу к public
 
-// Настройка шаблонизатора Handlebars (Презентация 1, 3)
+// --- НАСТРОЙКА ШАБЛОНИЗАТОРА (Чистые пути относительно папки src) ---
 app.engine('handlebars', engine({
     defaultLayout: 'main',
-    layoutsDir: path.join(__dirname, 'src/views/layouts'),
-    partialsDir: path.join(__dirname, 'src/views/partials'),
+    layoutsDir: path.join(__dirname, 'views/layouts'),
+    partialsDir: path.join(__dirname, 'views/partials'),
     extname: 'handlebars'
 }));
 app.set('view engine', 'handlebars');
-app.set('views', path.join(__dirname, 'src/views'));
+app.set('views', path.join(__dirname, 'views'));
 
-// Регистрация папки partials через hbs-модуль
-hbs.registerPartials(path.join(__dirname, 'src/views/partials'));
+// Регистрация partials элементов
+hbs.registerPartials(path.join(__dirname, 'views/partials'));
 
-// --- МАРШРУТЫ ИНТЕРНЕТ-МАГАЗИНА (Презентация 3) ---
 
-// Главная страница
+// --- МАРШРУТЫ ---
 app.get('/', (req, res) => {
     res.render('home', { title: 'Главная страница' });
 });
 
-// Страница "О нас" с передачей переменных
 app.get('/about', (req, res) => {
     res.render('about', {
         title: 'О нас',
@@ -54,27 +53,50 @@ app.get('/about', (req, res) => {
     });
 });
 
-// Страница каталога товаров и конкретного товара
+// Маршруты товаров
 app.get('/products', getProducts);
 app.get('/products/:id', getProductById);
 
-// --- СЛОЙ АРХИТЕКТУРЫ: ТАБЛИЦА ЗАДАЧ (Презентация 2) ---
+// Подключаем роутер задач
 app.use('/tasks', tasksRouter);
 
-app.get("/login", (req, res) => {
-    res.render("login", {
-        login: "Polly",
-        status: "Online",
-        description: "My page"
+// Подключаем наш роутер авторизации
+app.use('/auth', authRouter); 
+
+
+export default app;
+
+
+app.post('/login', (req, res) => {
+    const { email, password } = req.body;
+  
+    const user = users.find(
+      (item) =>
+        item.email.toLowerCase() === email.toLowerCase() &&
+        item.password === password
+    );
+  
+    if (!user) {
+      return res.render('login', {
+        title: 'Вход',
+        error: 'Неверный email или пароль.',
+      });
+    }
+  
+    req.session.user = {
+      username: user.username,
+      email: user.email,
+    };
+  
+    res.redirect('/');
+  });
+  
+  app.post('/logout', (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
     });
-});
-
-
-// Запуск сервера
-app.listen(PORT, () => {
-    console.log(`Сервер успешно запущен на порту ${PORT}`);
-});
-
-
-
+  });
+  
+  module.exports = app;
+  
 // оператор — это специальный символ или ключевое слово, которое выполняет какое-то действие над данными
