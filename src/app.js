@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 import tasksRouter from './routes/tasks.js';
-import authRouter from './routes/auth.js'; // Добавили роутер для входа/регистрации
+import authRouter from './routes/auth.js';
 import { getProducts, getProductById } from './controllers/productController.js';
 
 dotenv.config();
@@ -14,7 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename); // Переменная __dirname теперь четко указывает на папку src/
+const __dirname = path.dirname(__filename);
+
+const users = [];
 
 // Глобальный Логирующий Middleware
 app.use((req, res, next) => {
@@ -24,10 +26,10 @@ app.use((req, res, next) => {
 
 // Middleware для парсинга JSON, данных с HTML-форм и статики
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Важно для работы авторизации!
-app.use(express.static(path.join(__dirname, '../public'))); // Выходим из src наружу к public
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '../public')));
 
-// --- НАСТРОЙКА ШАБЛОНИЗАТОРА (Чистые пути относительно папки src) ---
+// --- НАСТРОЙКА ШАБЛОНИЗАТОРА ---
 app.engine('handlebars', engine({
     defaultLayout: 'main',
     layoutsDir: path.join(__dirname, 'views/layouts'),
@@ -39,7 +41,6 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Регистрация partials элементов
 hbs.registerPartials(path.join(__dirname, 'views/partials'));
-
 
 // --- МАРШРУТЫ ---
 app.get('/', (req, res) => {
@@ -61,11 +62,7 @@ app.get('/products/:id', getProductById);
 app.use('/tasks', tasksRouter);
 
 // Подключаем наш роутер авторизации
-app.use('/auth', authRouter); 
-
-
-export default app;
-
+app.use('/auth', authRouter);
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
@@ -89,14 +86,15 @@ app.post('/login', (req, res) => {
     };
   
     res.redirect('/');
-  });
+});
   
-  app.post('/logout', (req, res) => {
+app.post('/logout', (req, res) => {
     req.session.destroy(() => {
       res.redirect('/login');
     });
-  });
-  
-  module.exports = app;
-  
+});
+
+// Оставляем ОДИН export default в самом конце
+export default app;
+
 // оператор — это специальный символ или ключевое слово, которое выполняет какое-то действие над данными
