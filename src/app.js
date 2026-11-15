@@ -3,6 +3,7 @@ import { engine } from 'express-handlebars';
 import hbs from 'hbs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { users } from './data/users.js';
 import dotenv from 'dotenv';
 
 import tasksRouter from './routes/tasks.js';
@@ -16,7 +17,6 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const users = [];
 
 // Глобальный Логирующий Middleware
 app.use((req, res, next) => {
@@ -63,6 +63,16 @@ app.use('/tasks', tasksRouter);
 
 // Подключаем наш роутер авторизации
 app.use('/auth', authRouter);
+
+
+// Страница со списком всех пользователей
+app.get('/users', (req, res) => {
+  res.render('users', {
+      title: 'Список пользователей',
+      users: users
+  });
+});
+
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;

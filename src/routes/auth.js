@@ -1,9 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 
-const router = express.Router();
+import { users } from '../data/users.js';
 
-const users = [];
+
+const router = express.Router();
 
 // Функция валидации пароля
 function validatePassword(password) {
