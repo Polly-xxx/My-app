@@ -1,96 +1,120 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
-
-import { users } from '../data/users.js';
-
+import bcrypt from 'bcryptjs';
+import User from '../models/Users.js';
 
 const router = express.Router();
 
-// Функция валидации пароля
-function validatePassword(password) {
-    if (!password || password.length < 8) {
-        return 'Минимальная длина пароля — 8 символов';
-    }
-    if (!/\d/.test(password)) {
-        return 'Пароль должен содержать хотя бы 1 цифру';
-    }
-    if (!/[A-ZА-ЯЁ]/.test(password)) {
-        return 'Пароль должен содержать хотя бы одну заглавную букву';
-    }
-    return null;
-}
-
-// --- ВХОД ---
-router.get('/login', (req, res) => {
-    res.render('login', { title: 'Авторизация' });
-});
-
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    const user = users.find(u => u.email === email);
-
-    if (!user && email === 'gavgav@mycorp.com' && password === '12345') {
-        return res.render('home', { 
-            title: 'Главная', 
-            user: { firstName: 'Полина', email: 'gavgav@mycorp.com' } 
-        });
-    }
-
-    if (!user) {
-        return res.render('login', { title: 'Авторизация', error: 'Неверный email или пароль' });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (isMatch) {
-        return res.render('home', { title: 'Главная', user: user });
-    }
-
-    res.render('login', { title: 'Авторизация', error: 'Неверный email или пароль' });
-});
-
-// --- РЕГИСТРАЦИЯ ---
+// Страница регистрации
 router.get('/register', (req, res) => {
     res.render('register', { title: 'Регистрация' });
 });
 
+// Обработка регистрации (запись в БД через try/catch)
 router.post('/register', async (req, res) => {
-    const { firstName, email, password } = req.body;
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-        return res.render('register', { title: 'Регистрация', error: passwordError });
-    }
-
-    const userExists = users.find(u => u.email === email);
-    if (userExists) {
-        return res.render('register', { title: 'Регистрация', error: 'Пользователь с таким email уже есть' });
-    }
-
     try {
+        const { firstName, name, username, email, password } = req.body;
+        const userNameValue = (username || firstName || name || '').trim();
+
+        if (!userNameValue || !email || !password) {
+            return res.status(400).render('register', {
+                title: 'Регистрация',
+                error: 'Пожалуйста, заполните все поля.'
+            });
+        }
+
+        // Проверяем, не занят ли email
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).render('register', {
+                title: 'Регистрация',
+                error: 'Пользователь с таким email уже существует.'
+            });
+        }
+
+        // Хешируем пароль
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = {
-            firstName,
+        // Записываем пользователя в базу данных
+        const newUser = await User.create({
+            username: userNameValue,
             email,
             password: hashedPassword
-        };
-
-        users.push(newUser);
-
-        // Сразу открываем главную страницу с приветствием
-        res.render('home', { 
-            title: 'Главная', 
-            user: newUser 
         });
-    } catch (err) {
-        res.render('register', { title: 'Регистрация', error: 'Что-то пошло не так...' });
+
+        // Сохраняем в сессию, если она подключена
+        if (req.session) {
+            req.session.user = {
+                id: newUser.id,
+                username: newUser.username,
+                email: newUser.email
+            };
+        }
+
+        res.redirect('/');
+
+    } catch (error) {
+        console.error('Ошибка при записи пользователя в БД:', error);
+        res.status(500).render('register', {
+            title: 'Регистрация',
+            error: 'Не удалось зарегистрировать пользователя.'
+        });
     }
 });
 
-// --- ВЫХОД ---
-router.get('/logout', (req, res) => {
-    res.render('home', { title: 'Главная', user: null });
+// Страница входа
+router.get('/login', (req, res) => {
+    res.render('login', { title: 'Вход' });
+});
+
+// Обработка входа
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.render('login', {
+                title: 'Вход',
+                error: 'Неверный email или пароль.'
+            });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.render('login', {
+                title: 'Вход',
+                error: 'Неверный email или пароль.'
+            });
+        }
+
+        if (req.session) {
+            req.session.user = {
+                id: user.id,
+                username: user.username,
+                email: user.email
+            };
+        }
+
+        res.redirect('/');
+
+    } catch (error) {
+        console.error('Ошибка при входе:', error);
+        res.status(500).render('login', {
+            title: 'Вход',
+            error: 'Ошибка сервера при попытке входа.'
+        });
+    }
+});
+
+// Выход
+router.post('/logout', (req, res) => {
+    if (req.session) {
+        req.session.destroy(() => {
+            res.redirect('/auth/login');
+        });
+    } else {
+        res.redirect('/auth/login');
+    }
 });
 
 export default router;
